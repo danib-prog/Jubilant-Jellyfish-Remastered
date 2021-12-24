@@ -1,9 +1,9 @@
+from math import ceil
 from os import system
 
 import blessed.keyboard
 from blessed import Terminal
 from pygame.time import Clock, wait
-from math import ceil
 
 from maps import Map
 

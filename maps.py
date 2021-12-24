@@ -1,6 +1,10 @@
-from typing import List
+import json
+import os
+from typing import Any, Dict, List, Tuple
 
+import pygame as pg
 from blessed import Terminal
+from pygame.pixelcopy import surface_to_array
 
 import physics2
 import sprites
@@ -30,38 +34,6 @@ class Map:
         self.space = physics2.Space(100, 30, gravity=20, upscale=100)
         self.time_left = 0  # you should always use the ceil() of this variable to get the integer number of seconds left
 
-    def create_level1(self):
-        self.player = Player(10, 26, self.terminal)
-        player_rect = self.space.add_object(10, 26, PLAYER_W, PLAYER_H, type="player")
-        self.player_rect = player_rect
-
-        self.thinking_box = ThinkingBox(15, 26, self.terminal)
-        self.space.add_object(15, 26, THINKINGBOX_W, THINKINGBOX_H, type="thinkingbox")
-
-        box1 = Box(54, 21, self.terminal)
-        box1_rect = self.space.add_object(54, 21, BOX_W, BOX_H, type="box")
-        self.boxes_rect.append(box1_rect)
-        box2 = Box(70, 27, self.terminal)
-        box2_rect = self.space.add_object(70, 27, BOX_W, BOX_H, type="box")
-        self.boxes_rect.append(box2_rect)
-        self.boxes.append(box1)
-        self.boxes.append(box2)
-
-        platform1 = Platform(50, 23, 30, True, self.terminal)
-        self.space.add_object(50, 23, 30, PLATFORM_H, type="platform")
-        border1 = Platform(0, 29, 100, True, self.terminal)
-        self.space.add_object(0, 29, 100, PLATFORM_H, type="platform")
-        self.platforms.append(platform1)
-        self.platforms.append(border1)
-
-        target1 = Target(70, 21, self.terminal)
-        self.space.add_object(70, 21, TARGET_W, TARGET_H, type="target")
-        target2 = Target(90, 27, self.terminal)
-        self.space.add_object(90, 27, TARGET_W, TARGET_H, type="target")
-        self.targets.append(target1)
-        self.targets.append(target2)
-
-        self.time_left = 70
 
     def create_level2(self):
         self.player = Player(35, 4, self.terminal)
@@ -209,3 +181,100 @@ class Map:
         self.boxes_rect = []
         self.platforms = []
         self.space.reset()
+
+
+def load_object(topleft: Tuple[int], scale: int, type: str, width: int = 16):
+
+    #possible types: "player", "box", "thinkingbox", "target", "platform"
+
+    main_dir = os.path.split(os.path.abspath(__file__))[0]
+    data_dir = os.path.join(main_dir, "data")
+    image_dir = os.path.join(data_dir, "images")
+
+    if type != "platform":
+        image = os.path.join(image_dir, f"{type}.png")
+        surface = pg.image.load(image)
+    else:
+        PLATFORM_H = 16
+        PLATFORM_MIN_W = 16
+        #the sides of a platform are each 8 pixels wide in basic scale
+
+        surface = pg.Surface((width, PLATFORM_H))
+
+        pl_left_img = os.path.join(image_dir, "platform_left.png")
+        pl_left_img = pg.image.load(pl_left_img)
+        surface.blit(pl_left_img, (0, 0))
+
+        if width > PLATFORM_MIN_W:
+            pl_mid_img =  os.path.join(image_dir, "platform_mid.png")
+            pl_mid_img = pg.image.load(pl_mid_img)
+            surface.blit(pl_mid_img, (8, 0))
+
+        pl_right_img = os.path.join(image_dir, "platform_right.png")
+        pl_right_img = pg.image.load(pl_right_img)
+        topleft_x = width - 8
+        surface.blit(pl_right_img, (topleft_x, 0))
+
+    size = surface.get_size()
+    size = size[0] * scale, size[1] * scale
+    surface = pg.transform.scale(image, size)
+
+    surface = surface.convert()
+    surface.set_colorkey(pg.Color(0, 0, 0, 0), pg.RLEACCEL)
+
+    rect = surface.get_rect()
+
+    sprite = pg.sprite.Sprite()
+    sprite.image = surface
+    sprite.rect = rect
+
+    return sprite
+
+
+def load_level(level: int, scale:int=1):
+    main_dir = os.path.split(os.path.abspath(__file__))[0]
+    data_dir = os.path.join(main_dir, "data")
+    levels_dir = os.path.join(data_dir, "levels")
+    level_path = os.path.join(levels_dir, f"level{level}.json")
+
+    level_raw = json.loads(level_path)
+
+    players = pg.sprite.RenderPlain()
+    boxes = pg.sprite.RenderPlain()
+    thinking_boxes = pg.sprite.RenderPlain()
+    platforms = pg.sprite.RenderPlain()
+    targets = pg.sprite.RenderPlain()
+
+    def fetch_and_scale_topleft(coords: Dict[Any]):
+        x = coords["x"] * scale
+        y = coords["y"] * scale
+
+        return x, y
+
+    for player in level_raw["players"]:
+        topleft = fetch_and_scale_topleft(player)
+        player_sprite = load_object(topleft, scale, type="player")
+        player_sprite.add(players)
+
+    for box in level_raw["boxes"]:
+        topleft = fetch_and_scale_topleft(box)
+        box_sprite = load_object(topleft, scale, type="box")
+        box_sprite.add(boxes)
+
+    for thinking_box in level_raw["thinking_boxes"]:
+        topleft = fetch_and_scale_topleft(thinking_box)
+        thinking_box_sprite = load_object(topleft, scale, type="thinkingbox")
+        thinking_box_sprite.add(thinking_boxes)
+
+    for target in level_raw["targets"]:
+        topleft = fetch_and_scale_topleft(target)
+        target_sprite = load_object(topleft, scale, type="target")
+        target_sprite.add(targets)
+
+    for platform in level_raw["platforms"]:
+        topleft = fetch_and_scale_topleft(platform)
+        width = platform["w"] * scale
+        platform_sprite = load_object(topleft, scale, type="platform", width=width)
+        platform_sprite.add(platforms)
+
+
