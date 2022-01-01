@@ -15,40 +15,6 @@ COLLISION_TYPES = {"box_to_target": 0,
                    "object_to_border": 5}
 
 
-class Object(pygame.Rect):
-    """
-    A subclass of pygame.Rect to provide objects for the upscaled simulations inside 'Space'.
-    
-    This class is not intended to be manually initialized.
-    """
-
-    speed: List[float] = [0, 0]
-
-    def __init__(self, x: int, y: int, w: int, h: int, upscale: int = 1):
-        """
-        Initialization (shouldn't be called manually).
-
-        :param x: The initial horizontal coordinate of the top-left corner of the object.
-        :param y: The initial vertical coordinate of the top-left corner of the object.
-        :param w: The initial width of the object.
-        :param h: The initial height of the object.
-        :param upscale: The scale of upscaling in the simulation.
-        """
-        super().__init__(x, y, w, h)
-        self.upscale = upscale
-
-    def get_position(self) -> Tuple[int, int]:
-        """
-        Gets the actual position of the object.
-
-        :return: A tuple containing the top-left coords of the object.
-        """
-        x, y = self.topleft
-        x /= self.upscale
-        y /= self.upscale
-        return round(x), round(y)
-
-
 class Space:
     """
     This class is representing a 2D space.
@@ -56,12 +22,12 @@ class Space:
     This class handles all the object creation, collision handling and event detecting.
     """
 
-    targets: List[Object] = []
+    targets: List[object] = []
     targets_engaged: int = 0
-    players: List[Object] = []
-    boxes: List[Object] = []
-    platforms: List[Object] = []
-    thinkingbox: Object = None
+    players: List[object] = []
+    boxes: List[object] = []
+    platforms: List[object] = []
+    thinkingboxes: List[object] = []
     player_on_ground = False
     player_in_thinkingbox = False
 
@@ -79,33 +45,27 @@ class Space:
         self.gravity = gravity * upscale
         self.upscale = upscale
 
-    def add_object(self, x: int, y: int, w: int, h: int, type: str) -> Object:
+    def add_object(self, rect: object, type: str) -> None:
         """
         Adds a physical object to the space at the given position.
 
-        :param x: The initial horizontal coordinate of the top-left corner of the object.
-        :param y: The initial vertical coordinate of the top-left corner of the object.
-        :param w: The width of the object.
-        :param h: The height of the object.
+        :param rect: The HastyRect instance of the sprite.
         :param type: The type of the object. (Can be: "target", "player", "box", "platform", "thinkingbox")
-        :return: The added object.
+        :return: None
         """
-        item = Object(x*self.upscale, y*self.upscale, w*self.upscale, h*self.upscale, upscale=self.upscale)
 
         if type == "target":
-            self.targets.append(item)
+            self.targets.append(rect)
         if type == "player":
-            self.players.append(item)
+            self.players.append(rect)
         if type == "box":
-            self.boxes.append(item)
+            self.boxes.append(rect)
         if type == "platform":
-            self.platforms.append(item)
+            self.platforms.append(rect)
         if type == "thinkingbox":
-            self.thinkingbox = item
+            self.thinkingboxes.append(rect)
 
-        return item
-
-    def check_collisions(self) -> List[Tuple[Object, Any, int]]:
+    def check_collisions(self) -> List[Tuple[object, Any, int]]:
         """
         This method checks for collisions between objects and lists them all.
 
@@ -113,7 +73,7 @@ class Space:
         """
         collisions = []
 
-        def check_list(item1: Object, rect_list: List[Object], collision_type: str) -> None:
+        def check_list(item1: object, rect_list: List[object], collision_type: str) -> None:
             # Adds the collisions of item1 with the items in rect_list to the collisions list
             item1toitem2_list = item1.collidelistall(rect_list)
             if item1toitem2_list:
@@ -124,7 +84,7 @@ class Space:
                     if debug:
                         logging.info(f"{item1} collides with {item2} ({collision_type})")
 
-        def check_borders(item: Object) -> None:
+        def check_borders(item: object) -> None:
             # Adds the collisions of item1 with the borders to the collisions list
             if item.left < 0 or item.right > self.w or item.top < 0 or item.bottom > self.h:
                 collisions.append((item, "wall", COLLISION_TYPES["object_to_border"]))
@@ -132,7 +92,7 @@ class Space:
                 if debug:
                     logging.info(f"{item} collides with a border")
 
-        def check_sametype(itemlist: List[Object], collision_type: str) -> None:
+        def check_sametype(itemlist: List[object], collision_type: str) -> None:
             # Adds the collisions between objects in a list to the collisions list
             for item1_i, item1 in enumerate(itemlist):
                 for item2_i in range(len(itemlist) - (item1_i + 1)):
@@ -145,11 +105,12 @@ class Space:
                             logging.info(f"{item1}, array index: {item1_i},\
                                       collides with a similar object ({collision_type})")
 
-        def check_playerinthinking() -> None:
+        def check_playerinthinking(player) -> None:
             # Checks whether any player is inside the thinking-box
-            if (player.left > self.thinkingbox.left and player.right < self.thinkingbox.right
-                    and abs(player.bottom - self.thinkingbox.bottom) < 2 and abs(player.top - self.thinkingbox.top) < 2):
-                self.player_in_thinkingbox = True
+            # TODO: rewrite this function to actually handle self.thinkingboxes as a list
+            shrinked_tb = self.thinkingboxes[0].inflate(-8 * self.upscale, -4 * self.upscale)
+            x = shrinked_tb.collidepoint(self.players[0].center)
+            self.player_in_thinkingbox = bool(x)
 
         # Collision checking is only needed for the moving objects (in this case these are boxes and players)
         for box in self.boxes:
@@ -170,20 +131,20 @@ class Space:
             check_list(player, self.platforms, "object_to_platform")
             check_list(player, self.boxes, "player_to_box")
             check_borders(player)
-            if self.thinkingbox:
+            if self.thinkingboxes:
                 check_playerinthinking(player)
         check_sametype(self.players, "player_to_player")
 
         return collisions
 
-    def resolve_collisions(self, collisions: List[Tuple[Object, Any, int]]) -> None:
+    def resolve_collisions(self, collisions: List[Tuple[object, Any, int]]) -> None:
         """
         Resolves all the collisions.
 
         :param collisions: The list of collisions to be resolved (this should be a product of the check_collisions method)
         :return: None
         """
-        def whatside(collision: Tuple[Object, Object, int], tolerance: int = 31) -> str:
+        def whatside(collision: Tuple[object, object, int], tolerance: int = 31) -> str:
             if abs(collision[0].top - collision[1].bottom) < tolerance:
                 return "top"
             if abs(collision[0].bottom - collision[1].top) < tolerance:
@@ -222,7 +183,7 @@ class Space:
                     item1.speed[0] = 0
                     item1.right = item2.left
                 if side == "top":
-                    item1.speed = [item1.speed[0], item1.speed[1]*-1]
+                    item1.speed = [item1.speed[0], 0] #item1.speed[1]*-1]
                     item1.top = item2.bottom
                 if side == "bottom":
                     item1.speed = [0, 0]
@@ -307,7 +268,7 @@ class Space:
                                  f"\t item1 stats: topleft: {item1.topleft}, speed: {item1.speed} \n")
                 index += 1
 
-    def move_player(self, player: Object, key: str) -> None:
+    def move_player(self, player: object, key: str) -> None:
         """
         Moves the player.
 
@@ -315,25 +276,34 @@ class Space:
         :param key: The direction of the movement; can be: "up", "down", "left", "right".
         :return: None
         """
-        jump_height = 7 * self.upscale
+        jump_height = 56 * self.upscale
         jump_speed = self.gravity * math.sqrt((jump_height / self.gravity) * 2)
         if key == "up" and self.player_on_ground:
             logging.info(f"moving player up: speed: {player.speed}")
             player.speed[1] = jump_speed * -1
             self.player_on_ground = False
             logging.info(f"moved player up: speed: {player.speed}")
-        if key == "down":
+
+        if key == "down" and not self.player_on_ground:
             logging.info(f"moving player down: speed: {player.speed}")
             player.speed[1] += jump_speed
             logging.info(f"moving player down: speed: {player.speed}")
 
         # TODO: Find a way to automatically determine the right movement speed for the sides based on the upscale
         if key == "right":
-            player.right += 30
+            player.speed[0] = 100
+            #player.right += 30
             logging.info(f"moved player right: topleft: {player.topleft}")
+
         if key == "left":
-            player.left -= 30
+            player.speed[0] = -100
+            #player.left -= 30
             logging.info(f"moved player left: topleft: {player.topleft}")
+
+        if key == "stop_hor":
+            player.speed[0] = 0
+            logging.info(f"stopped horizontal player movement: topleft: {player.topleft}")
+
 
     def step(self, fps: int) -> None:
         """
@@ -382,6 +352,6 @@ class Space:
         self.players = []
         self.boxes = []
         self.platforms = []
-        self.thinkingbox = None
+        self.thinkingboxes = []
         self.player_on_ground = False
         self.player_in_thinkingbox = False
