@@ -183,7 +183,7 @@ class Space:
                     item1.speed[0] = 0
                     item1.right = item2.left
                 if side == "top":
-                    item1.speed = [item1.speed[0], 0] #item1.speed[1]*-1]
+                    item1.speed = [item1.speed[0], 0]  # item1.speed[1]*-1]
                     item1.top = item2.bottom
                 if side == "bottom":
                     item1.speed = [0, 0]
@@ -303,7 +303,6 @@ class Space:
         if key == "stop_hor":
             player.speed[0] = 0
             logging.info(f"stopped horizontal player movement: topleft: {player.topleft}")
-
 
     def step(self, fps: int) -> None:
         """

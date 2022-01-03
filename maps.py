@@ -138,7 +138,7 @@ class HastyRect(pg.Rect):
 
 def load_object(topleft: Tuple[int], scale: int, type: str, width: int = 16):
 
-    #possible types: "player", "box", "thinkingbox", "target", "platform"
+    # possible types: "player", "box", "thinkingbox", "target", "platform"
 
     main_dir = os.path.split(os.path.abspath(__file__))[0]
     data_dir = os.path.join(main_dir, "data")
@@ -150,7 +150,7 @@ def load_object(topleft: Tuple[int], scale: int, type: str, width: int = 16):
     else:
         PLATFORM_H = 16
         PLATFORM_MIN_W = 16
-        #the sides of a platform are each 8 pixels wide in basic scale
+        # the sides of a platform are each 8 pixels wide in basic scale
 
         surface = pg.Surface((width, PLATFORM_H))
 
@@ -161,12 +161,12 @@ def load_object(topleft: Tuple[int], scale: int, type: str, width: int = 16):
         rightside_topleft_x = width - 8
 
         if width > PLATFORM_MIN_W:
-            pl_mid_img =  os.path.join(image_dir, "platform_mid.png")
+            pl_mid_img = os.path.join(image_dir, "platform_mid.png")
             pl_mid_img = pg.image.load(pl_mid_img)
             topleft_x = 8
             while topleft_x < rightside_topleft_x:
                 surface.blit(pl_mid_img, (topleft_x, 0))
-                topleft_x += 8 # platform_mid.png is 8 pixels wide
+                topleft_x += 8  # platform_mid.png is 8 pixels wide
 
         pl_right_img = os.path.join(image_dir, "platform_right.png")
         pl_right_img = pg.image.load(pl_right_img)
@@ -188,7 +188,7 @@ def load_object(topleft: Tuple[int], scale: int, type: str, width: int = 16):
     return sprite
 
 
-def load_level(level: int, scale:int=1):
+def load_level(level: int, scale: int = 1):
     main_dir = os.path.split(os.path.abspath(__file__))[0]
     data_dir = os.path.join(main_dir, "data")
     levels_dir = os.path.join(data_dir, "levels")
@@ -248,5 +248,3 @@ def load_level(level: int, scale:int=1):
         platform_sprite.add(groups["platform"])
 
     return groups, area, time_available
-
-

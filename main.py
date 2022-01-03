@@ -11,23 +11,26 @@ import pygame as pg
 
 import maps
 import physics2
+import widgets
 
 #terminal = Terminal()
 fps = 120
+
+
 def run_game():
-    pg.init()
+    pg.mouse.set_visible(False)
     clock = pg.time.Clock()
     level_i = 1
     while level_i < 3:
-        scale = 2 # TODO: make this responsive to graphics settings
+        scale = 2  # TODO: make this responsive to graphics settings
         level = maps.load_level(level_i, scale)
         groups = level[0]
         area = level[1]
         time_left = level[2]
 
-        screen = pg.display.set_mode(tuple([c*scale for c in area])) #, pg.SCALED)
+        screen = pg.display.set_mode(tuple([c*scale for c in area]))  # , pg.SCALED)
         space = physics2.Space(*area, 400, scale)
-        space.reset() # WTF moments here because when space is newly initiated (the previous space has explicitly been deleted) it already has objects in it
+        space.reset()  # WTF moments here because when space is newly initiated (the previous space has explicitly been deleted) it already has objects in it
 
         allsprites = pg.sprite.RenderPlain()
         for type in groups:
@@ -53,8 +56,11 @@ def run_game():
             for event in pg.event.get():
                 if event.type == pg.QUIT:
                     pg.quit()
+                if event.type == pg.KEYDOWN:
+                    if event.key == pg.K_ESCAPE:
+                        return
 
-            keys_pressed = pg.key.get_pressed() # sequence of booleans
+            keys_pressed = pg.key.get_pressed()  # sequence of booleans
 
             if keys_pressed[pg.K_UP]:
                 space.move_player(player_rect, "up")
@@ -104,64 +110,68 @@ def run_game():
 
         del space
 
-def run_tutorial():
-    val = terminal.inkey(timeout=1 / fps)
-    while val != 'q':
-        val = terminal.inkey(timeout=1/fps)
-        tutorial = terminal.move_xy(40, 5) +  terminal.lightcyan(terminal.on_darkslategray4('TUTORIAL'))
-        info1 = terminal.move_xy(20, 10) +  terminal.lightcyan(terminal.on_darkslategray('The purpose of the game is to push the boxes until all targets have a box inside. Make sure to finish it in time. If you want to think about the level, enter the gray thinking box and the timer will stop.'))
-        info2 = terminal.move_xy(20, 17) +  terminal.lightcyan(terminal.on_darkslategray('MOVEMENT: use A and D or left and right arrow keys to move. Use W and up arrow to jump and S and down arrow to cancel the jump'))
-        exit = terminal.move_xy(20, 20) + terminal.lightcyan(terminal.on_darkslategray('Press q to exit. You can use q to quit the main game and the menu too.'))
-        print(tutorial + info2 + info1 + exit, flush=True)
+    return
+
+
+def run_help():
+    screen = pg.display.set_mode((800, 480), pg.SCALED)
+    screen.fill((0, 153, 255))
+    pg.mouse.set_visible(True)
+
+    help_widget = widgets.create_text(
+        "Push the boxes into their place within the time limit! Use the thinking box to stop the timer!")
+
+    widgets.align_column(screen, help_widget)
+
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+            if event.type == pg.KEYDOWN:
+                if event.key == pg.K_ESCAPE:
+                    return
+
+        pg.display.flip()
 
 
 def menu():
-    with terminal.cbreak(), terminal.hidden_cursor(), terminal.fullscreen():
-        val: blessed.keyboard.Keystroke = terminal.inkey(timeout=1/fps)
-        print(terminal.home + terminal.lightcyan_on_darkslategray + terminal.clear)
-        index = 1
-        while val != 'q':
-            val = terminal.inkey(timeout=1/fps)
-            if val.name == "KEY_UP":
-                index -= 1
-            if val.name == "KEY_DOWN":
-                index += 1
-            if index < 1:
-                index = 3
-            if index > 3:
-                index = 1
-            if val.name == "KEY_ENTER":
-                if index == 1:
-                    run_game()
-                    print(terminal.home + terminal.lightcyan_on_darkslategray + terminal.clear)
-                if index == 2:
-                    print(terminal.home + terminal.lightcyan_on_darkslategray + terminal.clear)
-                    run_tutorial()
-                    print(terminal.home + terminal.lightcyan_on_darkslategray + terminal.clear)
-                if index == 3:
-                    break
+    def init():
+        screen = pg.display.set_mode((800, 480), pg.SCALED)
+        screen.fill((0, 153, 255))
+        pg.mouse.set_visible(True)
 
-            menu = terminal.move_xy(20 , 7) + terminal.lightcyan(terminal.on_darkslategray('MENU'))
-            start = terminal.move_xy(20 , 10) + terminal.lightcyan(terminal.on_darkslategray('START GAME'))
-            tutorial = terminal.move_xy(20, 11) +  terminal.lightcyan(terminal.on_darkslategray('TUTORIAL'))
-            exit = terminal.move_xy(20, 13) + terminal.lightcyan(terminal.on_darkslategray('EXIT'))
-            if index == 1:
-                start = terminal.move_xy(20 , 10) + terminal.lightcyan(terminal.on_darkslategray4('START GAME'))
-            if index == 2:
-                tutorial = terminal.move_xy(20, 11) +  terminal.lightcyan(terminal.on_darkslategray4('TUTORIAL'))
-            if index == 3:
-                exit = terminal.move_xy(20, 13) +  terminal.lightcyan(terminal.on_darkslategray4('EXIT'))
-            print(start + menu + tutorial + exit, flush=True)
+        start_button = widgets.create_button("Start")
+        help_button = widgets.create_button("Help")
+
+        widgets.align_column(screen, start_button, help_button)
+
+        return start_button, help_button
+
+    start_button, help_button = init()
+
+    while True:
+        for event in pg.event.get():
+            if event.type == pg.QUIT:
+                pg.quit()
+
+        mouse_pressed = pg.mouse.get_pressed()[0]
+        if mouse_pressed:
+            mouse_pos = pg.mouse.get_pos()
+            if start_button.point_inside(mouse_pos):
+                run_game()
+                start_button, help_button = init()
+            if help_button.point_inside(mouse_pos):
+                run_help()
+                start_button, help_button = init()
+
+        pg.display.flip()
 
 
-def main():
-    system("resize -s 30 100 | 2> /dev/null")
+# system("clear")
+# main()
+# system("clear")
+
+
+if __name__ == '__main__':
+    pg.init()
     menu()
-
-
-#system("clear")
-#main()
-#system("clear")
-
-
-run_game()
