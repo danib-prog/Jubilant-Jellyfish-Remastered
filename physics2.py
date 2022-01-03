@@ -144,7 +144,7 @@ class Space:
         :param collisions: The list of collisions to be resolved (this should be a product of the check_collisions method)
         :return: None
         """
-        def whatside(collision: Tuple[object, object, int], tolerance: int = 31) -> str:
+        def whatside(collision: Tuple[object, object, int], tolerance: int = 5) -> str:
             if abs(collision[0].top - collision[1].bottom) < tolerance:
                 return "top"
             if abs(collision[0].bottom - collision[1].top) < tolerance:
