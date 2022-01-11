@@ -1,5 +1,5 @@
 import os
-from typing import Tuple
+from typing import List, Tuple
 
 import pygame as pg
 
@@ -10,21 +10,45 @@ data_dir = os.path.join(main_dir, "data")
 fonts_dir = os.path.join(data_dir, "fonts")
 font_path = os.path.join(fonts_dir, "Minecraftia-Regular.ttf")
 
-font_b = pg.font.Font(font_path, 40)
+font_ba = pg.font.Font(font_path, 20)
+font_bu = pg.font.Font(font_path, 40)
 font_t = pg.font.Font(font_path, 12)
 
 
-def create_text(txt: str):
+def create_banner(txt: str):
+    widget = pg.Surface((500, 250))
+    widget.fill((255, 255, 255))
+    widget.set_clip(pg.Rect(2, 2, 496, 246))
+    widget.fill((255, 80, 0))
+    widget_r = widget.get_rect()
+
+    text = font_ba.render(txt, True, (255, 255, 255))
+    textpos = text.get_rect(center=widget_r.center)
+
+    widget.blit(text, textpos)
+
+    sprite = pg.sprite.Sprite()
+    sprite.image = widget
+    sprite.rect = widget_r
+
+    return sprite
+
+
+def create_text(rows: List[str]):
     widget = pg.Surface((700, 350))
     widget.fill((255, 255, 255))
     widget.set_clip(pg.Rect(2, 2, 696, 346))
     widget.fill((19, 7, 201))
     widget_r = widget.get_rect()
 
-    text = font_t.render(txt, True, (255, 255, 255))
-    textpos = text.get_rect(center=widget_r.center)
+    row_height = font_t.render(' ', True, (255, 255, 255)).get_rect().h
 
-    widget.blit(text, textpos)
+    for i, row in enumerate(rows):
+        text = font_t.render(row, True, (255, 255, 255))
+        pos = (5, 5 + (i+1)*row_height)
+        textpos = text.get_rect(topleft=pos)
+
+        widget.blit(text, textpos)
 
     sprite = pg.sprite.Sprite()
     sprite.image = widget
@@ -51,7 +75,7 @@ def create_button(txt: str):
     widget.fill((19, 7, 201))
     widget_r = widget.get_rect()
 
-    text = font_b.render(txt, True, (255, 255, 255))
+    text = font_bu.render(txt, True, (255, 255, 255))
     textpos = text.get_rect(center=widget_r.center)
 
     widget.blit(text, textpos)

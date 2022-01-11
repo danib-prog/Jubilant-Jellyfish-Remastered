@@ -1,6 +1,3 @@
-import pygame as pg
+import main
 
-rec = pg.Rect(120, 392, 64, 56)
-p = 155, 424
-
-print(rec.collidepoint(p))
+main.run_game()

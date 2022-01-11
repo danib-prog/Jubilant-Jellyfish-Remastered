@@ -22,14 +22,14 @@ class Space:
     This class handles all the object creation, collision handling and event detecting.
     """
 
-    targets: List[object] = []
-    targets_engaged: int = 0
-    players: List[object] = []
-    boxes: List[object] = []
-    platforms: List[object] = []
-    thinkingboxes: List[object] = []
-    player_on_ground = False
-    player_in_thinkingbox = False
+    # targets: List[object] = []
+    # targets_engaged: int = 0
+    # players: List[object] = []
+    # boxes: List[object] = []
+    # platforms: List[object] = []
+    # thinkingboxes: List[object] = []
+    # player_on_ground = False
+    # player_in_thinkingbox = False
 
     def __init__(self, w: int, h: int, gravity: int, upscale: int = 100):
         """
@@ -44,6 +44,16 @@ class Space:
         self.h = h * upscale
         self.gravity = gravity * upscale
         self.upscale = upscale
+
+        self.targets: List[object] = []
+        self.targets_engaged: int = 0
+        self.players: List[object] = []
+        self.boxes: List[object] = []
+        self.platforms: List[object] = []
+        self.thinkingboxes: List[object] = []
+        self.player_on_ground = False
+        self.player_jumping = False
+        self.player_in_thinkingbox = False
 
     def add_object(self, rect: object, type: str) -> None:
         """
@@ -282,22 +292,22 @@ class Space:
             logging.info(f"moving player up: speed: {player.speed}")
             player.speed[1] = jump_speed * -1
             self.player_on_ground = False
+            self.player_jumping = True
             logging.info(f"moved player up: speed: {player.speed}")
 
-        if key == "down" and not self.player_on_ground:
+        if key == "down" and self.player_jumping:
             logging.info(f"moving player down: speed: {player.speed}")
-            player.speed[1] += jump_speed
+            player.speed[1] = 0
             logging.info(f"moving player down: speed: {player.speed}")
+            self.player_jumping = False
 
-        # TODO: Find a way to automatically determine the right movement speed for the sides based on the upscale
+        player_speed = 100 * self.upscale
         if key == "right":
-            player.speed[0] = 100
-            #player.right += 30
+            player.speed[0] = player_speed
             logging.info(f"moved player right: topleft: {player.topleft}")
 
         if key == "left":
-            player.speed[0] = -100
-            #player.left -= 30
+            player.speed[0] = player_speed * -1
             logging.info(f"moved player left: topleft: {player.topleft}")
 
         if key == "stop_hor":

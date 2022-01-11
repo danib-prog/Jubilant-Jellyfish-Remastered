@@ -28,9 +28,9 @@ def run_game():
         area = level[1]
         time_left = level[2]
 
-        screen = pg.display.set_mode(tuple([c*scale for c in area]))  # , pg.SCALED)
+        screen = pg.display.set_mode(tuple([c*scale for c in area]), pg.SCALED)
         space = physics2.Space(*area, 400, scale)
-        space.reset()  # WTF moments here because when space is newly initiated (the previous space has explicitly been deleted) it already has objects in it
+        # space.reset()  # Interesting moments here because when space is newly initiated (the previous space has explicitly been deleted) it already has objects in it
 
         allsprites = pg.sprite.RenderPlain()
         for type in groups:
@@ -102,11 +102,22 @@ def run_game():
 
         if space.targets_engaged == len(space.targets):
             level_i += 1
-            # TODO: winner winner chicken dinner
+
+            banner = widgets.create_banner("Well done! Next level incoming!")
+            widgets.align_column(screen, banner)
+            pg.display.flip()
+
+            wait_time = 3000
+            pg.time.wait(wait_time)
 
         else:
             level_i = 1
-            # TODO: try again or quit
+            banner = widgets.create_banner("Time's up! Try again from the beginning!")
+            widgets.align_column(screen, banner)
+            pg.display.flip()
+
+            wait_time = 3000
+            pg.time.wait(wait_time)
 
         del space
 
@@ -119,7 +130,11 @@ def run_help():
     pg.mouse.set_visible(True)
 
     help_widget = widgets.create_text(
-        "Push the boxes into their place within the time limit! Use the thinking box to stop the timer!")
+        ["You must move a jellyfish in the map to push some boxes into their places. Your time is limited ",
+         "though! You can see how much time is left to complete the level on the top-mid of the screen. ",
+         "If you need time to think about how you can solve the current level, just enter the grey thinking-",
+         "box, and the timer will stop. Keep in mind, that jellyfishes need a calm place to think, so there ",
+         "is dark and quiet inside the box: You cannot see the level when you're inside."])
 
     widgets.align_column(screen, help_widget)
 
